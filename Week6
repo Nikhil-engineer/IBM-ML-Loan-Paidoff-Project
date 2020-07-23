@@ -1,0 +1,634 @@
+Classification with Python
+In this notebook we try to practice all the classification algorithms that we learned in this course.
+
+We load a dataset using Pandas library, and apply the following algorithms, and find the best one for this specific dataset by accuracy evaluation methods.
+
+Lets first load required libraries:
+
+
+
+Classification with Python
+In this notebook we try to practice all the classification algorithms that we learned in this course.
+
+We load a dataset using Pandas library, and apply the following algorithms, and find the best one for this specific dataset by accuracy evaluation methods.
+
+Lets first load required libraries:
+
+About dataset
+This dataset is about past loans. The Loan_train.csv data set includes details of 346 customers whose loan are already paid off or defaulted. It includes following fields:
+
+Field	Description
+Loan_status	Whether a loan is paid off on in collection
+Principal	Basic principal loan amount at the
+Terms	Origination terms which can be weekly (7 days), biweekly, and monthly payoff schedule
+Effective_date	When the loan got originated and took effects
+Due_date	Since it’s one-time payoff schedule, each loan has one single due date
+Age	Age of applicant
+Education	Education of applicant
+Gender	The gender of applicant
+Lets download the dataset
+
+--2020-07-09 07:30:06--  https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/ML0101ENv3/labs/loan_train.csv
+Resolving s3-api.us-geo.objectstorage.softlayer.net (s3-api.us-geo.objectstorage.softlayer.net)... 67.228.254.196
+Connecting to s3-api.us-geo.objectstorage.softlayer.net (s3-api.us-geo.objectstorage.softlayer.net)|67.228.254.196|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 23101 (23K) [text/csv]
+Saving to: ‘loan_train.csv’
+
+100%[======================================>] 23,101      --.-K/s   in 0.07s   
+
+2020-07-09 07:30:06 (303 KB/s) - ‘loan_train.csv’ saved [23101/23101]
+
+Load Data From CSV File
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender
+0	0	0	PAIDOFF	1000	30	9/8/2016	10/7/2016	45	High School or Below	male
+1	2	2	PAIDOFF	1000	30	9/8/2016	10/7/2016	33	Bechalor	female
+2	3	3	PAIDOFF	1000	15	9/8/2016	9/22/2016	27	college	male
+3	4	4	PAIDOFF	1000	30	9/9/2016	10/8/2016	28	college	female
+4	6	6	PAIDOFF	1000	30	9/9/2016	10/8/2016	29	college	male
+(346, 10)
+Convert to date time object
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender
+0	0	0	PAIDOFF	1000	30	2016-09-08	2016-10-07	45	High School or Below	male
+1	2	2	PAIDOFF	1000	30	2016-09-08	2016-10-07	33	Bechalor	female
+2	3	3	PAIDOFF	1000	15	2016-09-08	2016-09-22	27	college	male
+3	4	4	PAIDOFF	1000	30	2016-09-09	2016-10-08	28	college	female
+4	6	6	PAIDOFF	1000	30	2016-09-09	2016-10-08	29	college	male
+Data visualization and pre-processing
+Let’s see how many of each class is in our data set
+
+PAIDOFF       260
+COLLECTION     86
+Name: loan_status, dtype: int64
+260 people have paid off the loan on time while 86 have gone into collection
+
+Lets plot some columns to underestand data better:
+
+Solving environment: done
+
+## Package Plan ##
+
+  environment location: /opt/conda/envs/Python36
+
+  added / updated specs: 
+    - seaborn
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    ca-certificates-2020.6.24  |                0         133 KB  anaconda
+    openssl-1.1.1g             |       h7b6447c_0         3.8 MB  anaconda
+    certifi-2020.6.20          |           py36_0         160 KB  anaconda
+    seaborn-0.10.1             |             py_0         160 KB  anaconda
+    ------------------------------------------------------------
+                                           Total:         4.2 MB
+
+The following packages will be UPDATED:
+
+    ca-certificates: 2020.1.1-0         --> 2020.6.24-0       anaconda
+    certifi:         2020.6.20-py36_0   --> 2020.6.20-py36_0  anaconda
+    openssl:         1.1.1g-h7b6447c_0  --> 1.1.1g-h7b6447c_0 anaconda
+    seaborn:         0.9.0-pyh91ea838_1 --> 0.10.1-py_0       anaconda
+
+
+Downloading and Extracting Packages
+ca-certificates-2020 | 133 KB    | ##################################### | 100% 
+openssl-1.1.1g       | 3.8 MB    | ##################################### | 100% 
+certifi-2020.6.20    | 160 KB    | ##################################### | 100% 
+seaborn-0.10.1       | 160 KB    | ##################################### | 100% 
+Preparing transaction: done
+Verifying transaction: done
+Executing transaction: done
+
+
+Pre-processing: Feature selection/extraction
+Lets look at the day of the week people get the loan
+
+We see that people who get the loan at the end of the week dont pay it off, so lets use Feature binarization to set a threshold values less then day 4
+
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender	dayofweek	weekend
+0	0	0	PAIDOFF	1000	30	2016-09-08	2016-10-07	45	High School or Below	male	3	0
+1	2	2	PAIDOFF	1000	30	2016-09-08	2016-10-07	33	Bechalor	female	3	0
+2	3	3	PAIDOFF	1000	15	2016-09-08	2016-09-22	27	college	male	3	0
+3	4	4	PAIDOFF	1000	30	2016-09-09	2016-10-08	28	college	female	4	1
+4	6	6	PAIDOFF	1000	30	2016-09-09	2016-10-08	29	college	male	4	1
+Convert Categorical features to numerical values
+Lets look at gender:
+
+Gender  loan_status
+female  PAIDOFF        0.865385
+        COLLECTION     0.134615
+male    PAIDOFF        0.731293
+        COLLECTION     0.268707
+Name: loan_status, dtype: float64
+86 % of female pay there loans while only 73 % of males pay there loan
+
+Lets convert male to 0 and female to 1:
+
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender	dayofweek	weekend
+0	0	0	PAIDOFF	1000	30	2016-09-08	2016-10-07	45	High School or Below	0	3	0
+1	2	2	PAIDOFF	1000	30	2016-09-08	2016-10-07	33	Bechalor	1	3	0
+2	3	3	PAIDOFF	1000	15	2016-09-08	2016-09-22	27	college	0	3	0
+3	4	4	PAIDOFF	1000	30	2016-09-09	2016-10-08	28	college	1	4	1
+4	6	6	PAIDOFF	1000	30	2016-09-09	2016-10-08	29	college	0	4	1
+One Hot Encoding
+How about education?
+education             loan_status
+Bechalor              PAIDOFF        0.750000
+                      COLLECTION     0.250000
+High School or Below  PAIDOFF        0.741722
+                      COLLECTION     0.258278
+Master or Above       COLLECTION     0.500000
+                      PAIDOFF        0.500000
+college               PAIDOFF        0.765101
+                      COLLECTION     0.234899
+Name: loan_status, dtype: float64
+Feature befor One Hot Encoding
+Principal	terms	age	Gender	education
+0	1000	30	45	0	High School or Below
+1	1000	30	33	1	Bechalor
+2	1000	15	27	0	college
+3	1000	30	28	1	college
+4	1000	30	29	0	college
+Use one hot encoding technique to conver categorical varables to binary variables and append them to the feature Data Frame
+Principal	terms	age	Gender	weekend	Bechalor	High School or Below	college
+0	1000	30	45	0	0	0	1	0
+1	1000	30	33	1	0	1	0	0
+2	1000	15	27	0	0	0	0	1
+3	1000	30	28	1	1	0	0	1
+4	1000	30	29	0	1	0	0	1
+Feature selection
+Lets defind feature sets, X:
+
+Principal	terms	age	Gender	weekend	Bechalor	High School or Below	college
+0	1000	30	45	0	0	0	1	0
+1	1000	30	33	1	0	1	0	0
+2	1000	15	27	0	0	0	0	1
+3	1000	30	28	1	1	0	0	1
+4	1000	30	29	0	1	0	0	1
+What are our lables?
+
+array(['PAIDOFF', 'PAIDOFF', 'PAIDOFF', 'PAIDOFF', 'PAIDOFF'],
+      dtype=object)
+Normalize Data
+Data Standardization give data zero mean and unit variance (technically should be done after train test split )
+
+/opt/conda/envs/Python36/lib/python3.6/site-packages/sklearn/preprocessing/data.py:645: DataConversionWarning: Data with input dtype uint8, int64 were all converted to float64 by StandardScaler.
+  return self.partial_fit(X, y)
+/opt/conda/envs/Python36/lib/python3.6/site-packages/ipykernel/__main__.py:1: DataConversionWarning: Data with input dtype uint8, int64 were all converted to float64 by StandardScaler.
+  if __name__ == '__main__':
+array([[ 0.51578458,  0.92071769,  2.33152555, -0.42056004, -1.20577805,
+        -0.38170062,  1.13639374, -0.86968108],
+       [ 0.51578458,  0.92071769,  0.34170148,  2.37778177, -1.20577805,
+         2.61985426, -0.87997669, -0.86968108],
+       [ 0.51578458, -0.95911111, -0.65321055, -0.42056004, -1.20577805,
+        -0.38170062, -0.87997669,  1.14984679],
+       [ 0.51578458,  0.92071769, -0.48739188,  2.37778177,  0.82934003,
+        -0.38170062, -0.87997669,  1.14984679],
+       [ 0.51578458,  0.92071769, -0.3215732 , -0.42056004,  0.82934003,
+        -0.38170062, -0.87997669,  1.14984679]])
+Classification
+Now, it is your turn, use the training set to build an accurate model. Then use the test set to report the accuracy of the model You should use the following algorithm:
+
+K Nearest Neighbor(KNN)
+Decision Tree
+Support Vector Machine
+Logistic Regression
+Notice:
+
+You can go above and change the pre-processing, feature selection, feature-extraction, and so on, to make a better model.
+You should use either scikit-learn, Scipy or Numpy libraries for developing the classification algorithms.
+You should include the code of the algorithm in the following cells.
+K Nearest Neighbor(KNN)
+Notice: You should find the best k to build the model with the best accuracy.
+warning: You should not use the loan_test.csv for finding the best k, however, you can split your train_loan.csv into train and test to find the best k.
+
+1 :  0.6906474820143885
+2 :  0.5827338129496403
+3 :  0.7266187050359713
+4 :  0.6762589928057554
+5 :  0.7482014388489209
+6 :  0.6762589928057554
+7 :  0.7482014388489209
+8 :  0.7050359712230215
+9 :  0.7769784172661871
+10 :  0.7338129496402878
+11 :  0.7482014388489209
+12 :  0.7194244604316546
+13 :  0.7482014388489209
+14 :  0.7266187050359713
+15 :  0.7410071942446043
+16 :  0.7338129496402878
+17 :  0.7482014388489209
+18 :  0.7266187050359713
+19 :  0.7553956834532374
+20 :  0.7266187050359713
+21 :  0.762589928057554
+22 :  0.7194244604316546
+23 :  0.762589928057554
+24 :  0.7482014388489209
+25 :  0.762589928057554
+26 :  0.762589928057554
+27 :  0.762589928057554
+28 :  0.762589928057554
+29 :  0.762589928057554
+30 :  0.762589928057554
+31 :  0.7913669064748201
+32 :  0.7769784172661871
+33 :  0.7913669064748201
+34 :  0.7913669064748201
+35 :  0.7913669064748201
+36 :  0.7985611510791367
+37 :  0.7841726618705036
+38 :  0.7913669064748201
+39 :  0.7913669064748201
+40 :  0.7841726618705036
+41 :  0.8345323741007195
+42 :  0.8345323741007195
+43 :  0.8273381294964028
+44 :  0.8345323741007195
+45 :  0.8201438848920863
+46 :  0.8201438848920863
+47 :  0.8201438848920863
+48 :  0.8273381294964028
+49 :  0.8201438848920863
+50 :  0.8201438848920863
+51 :  0.8201438848920863
+52 :  0.8201438848920863
+53 :  0.8201438848920863
+54 :  0.8201438848920863
+55 :  0.8201438848920863
+56 :  0.8201438848920863
+57 :  0.8201438848920863
+58 :  0.8201438848920863
+59 :  0.8201438848920863
+60 :  0.8201438848920863
+61 :  0.8201438848920863
+62 :  0.8201438848920863
+63 :  0.8201438848920863
+64 :  0.8201438848920863
+65 :  0.8201438848920863
+66 :  0.8201438848920863
+67 :  0.8201438848920863
+68 :  0.8201438848920863
+69 :  0.8201438848920863
+70 :  0.8201438848920863
+71 :  0.8201438848920863
+72 :  0.8201438848920863
+73 :  0.8201438848920863
+74 :  0.8201438848920863
+75 :  0.8201438848920863
+76 :  0.8201438848920863
+77 :  0.8201438848920863
+78 :  0.8201438848920863
+79 :  0.8201438848920863
+80 :  0.8201438848920863
+81 :  0.8201438848920863
+82 :  0.8201438848920863
+83 :  0.8201438848920863
+84 :  0.8201438848920863
+85 :  0.8201438848920863
+86 :  0.8201438848920863
+87 :  0.8201438848920863
+88 :  0.8201438848920863
+89 :  0.8201438848920863
+90 :  0.8201438848920863
+91 :  0.8201438848920863
+92 :  0.8201438848920863
+93 :  0.8201438848920863
+94 :  0.8201438848920863
+95 :  0.8201438848920863
+96 :  0.8201438848920863
+97 :  0.8201438848920863
+98 :  0.8201438848920863
+99 :  0.8201438848920863
+41  :  83.45 %
+Text(0, 0.5, 'Train Accuracy')
+
+accuracy :  83.5 %
+              precision    recall  f1-score   support
+
+  COLLECTION       0.67      0.16      0.26        25
+     PAIDOFF       0.84      0.98      0.91       114
+
+   micro avg       0.83      0.83      0.83       139
+   macro avg       0.75      0.57      0.58       139
+weighted avg       0.81      0.83      0.79       139
+
+
+
+Jaccard Similarity Score :  83.45 %
+
+
+F1-SCORE :  [0.25806452 0.90688259]
+
+
+Train Accuracy:  72.46376811594203 %
+Decision Tree
+Best Score: 0.7439613526570048
+Best params: {'criterion': 'entropy', 'max_depth': 5, 'max_features': 2, 'random_state': 0}
+/opt/conda/envs/Python36/lib/python3.6/site-packages/sklearn/model_selection/_search.py:841: DeprecationWarning: The default of the `iid` parameter will change from True to False in version 0.22 and will be removed in 0.24. This will change numeric results when test-set sizes are unequal.
+  DeprecationWarning)
+              precision    recall  f1-score   support
+
+  COLLECTION       0.32      0.40      0.36        25
+     PAIDOFF       0.86      0.82      0.84       114
+
+   micro avg       0.74      0.74      0.74       139
+   macro avg       0.59      0.61      0.60       139
+weighted avg       0.76      0.74      0.75       139
+
+
+
+Jaccard Similarity Score :  74.1 %
+
+
+F1-SCORE :  [0.35714286 0.83783784]
+
+
+Train Accuracy:  77.29468599033817 %
+Support Vector Machine
+
+/opt/conda/envs/Python36/lib/python3.6/site-packages/sklearn/svm/base.py:196: FutureWarning: The default value of gamma will change from 'auto' to 'scale' in version 0.22 to account better for unscaled features. Set gamma explicitly to 'auto' or 'scale' to avoid this warning.
+  "avoid this warning.", FutureWarning)
+Jaccard Similarity Score :  77.7 %
+
+
+F1-SCORE :  [0.27906977 0.86808511]
+
+
+Train Accuracy:  75.84541062801932 %
+Logistic Regression
+/opt/conda/envs/Python36/lib/python3.6/site-packages/sklearn/linear_model/logistic.py:433: FutureWarning: Default solver will be changed to 'lbfgs' in 0.22. Specify a solver to silence this warning.
+  FutureWarning)
+LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+          intercept_scaling=1, max_iter=100, multi_class='warn',
+          n_jobs=None, penalty='l2', random_state=None, solver='warn',
+          tol=0.0001, verbose=0, warm_start=False)
+              precision    recall  f1-score   support
+
+  COLLECTION       0.33      0.24      0.28        25
+     PAIDOFF       0.84      0.89      0.87       114
+
+   micro avg       0.78      0.78      0.78       139
+   macro avg       0.59      0.57      0.57       139
+weighted avg       0.75      0.78      0.76       139
+
+
+
+Jaccard Similarity Score :  77.7 %
+
+
+F1-SCORE :  [0.27906977 0.86808511]
+
+
+Train Accuracy:  73.91304347826086 %
+Model Evaluation using Test set
+First, download and load the test set:
+
+--2020-07-09 07:34:19--  https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/ML0101ENv3/labs/loan_test.csv
+Resolving s3-api.us-geo.objectstorage.softlayer.net (s3-api.us-geo.objectstorage.softlayer.net)... 67.228.254.196
+Connecting to s3-api.us-geo.objectstorage.softlayer.net (s3-api.us-geo.objectstorage.softlayer.net)|67.228.254.196|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 3642 (3.6K) [text/csv]
+Saving to: ‘loan_test.csv’
+
+100%[======================================>] 3,642       --.-K/s   in 0s      
+
+2020-07-09 07:34:19 (382 MB/s) - ‘loan_test.csv’ saved [3642/3642]
+
+Load Test set for evaluation
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender
+0	1	1	PAIDOFF	1000	30	9/8/2016	10/7/2016	50	Bechalor	female
+1	5	5	PAIDOFF	300	7	9/9/2016	9/15/2016	35	Master or Above	male
+2	21	21	PAIDOFF	1000	30	9/10/2016	10/9/2016	43	High School or Below	female
+3	24	24	PAIDOFF	1000	30	9/10/2016	10/9/2016	26	college	male
+4	35	35	PAIDOFF	800	15	9/11/2016	9/25/2016	29	Bechalor	male
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender
+0	1	1	PAIDOFF	1000	30	2016-09-08	2016-10-07	50	Bechalor	female
+1	5	5	PAIDOFF	300	7	2016-09-09	2016-09-15	35	Master or Above	male
+2	21	21	PAIDOFF	1000	30	2016-09-10	2016-10-09	43	High School or Below	female
+3	24	24	PAIDOFF	1000	30	2016-09-10	2016-10-09	26	college	male
+4	35	35	PAIDOFF	800	15	2016-09-11	2016-09-25	29	Bechalor	male
+Unnamed: 0	Unnamed: 0.1	loan_status	Principal	terms	effective_date	due_date	age	education	Gender	dayofweek
+0	1	1	PAIDOFF	1000	30	2016-09-08	2016-10-07	50	Bechalor	female	3
+1	5	5	PAIDOFF	300	7	2016-09-09	2016-09-15	35	Master or Above	male	4
+2	21	21	PAIDOFF	1000	30	2016-09-10	2016-10-09	43	High School or Below	female	5
+3	24	24	PAIDOFF	1000	30	2016-09-10	2016-10-09	26	college	male	5
+4	35	35	PAIDOFF	800	15	2016-09-11	2016-09-25	29	Bechalor	male	6
+<matplotlib.axes._subplots.AxesSubplot at 0x7f653c27de80>
+
+Principal	terms	age	Gender	weekend	Bechalor	High School or Below	college
+0	1000	30	50	1	0	1	0	0
+1	300	7	35	0	1	0	0	0
+2	1000	30	43	1	1	0	1	0
+3	1000	30	26	0	1	0	0	1
+4	800	15	29	0	1	1	0	0
+/opt/conda/envs/Python36/lib/python3.6/site-packages/sklearn/preprocessing/data.py:645: DataConversionWarning: Data with input dtype uint8, int64 were all converted to float64 by StandardScaler.
+  return self.partial_fit(X, y)
+/opt/conda/envs/Python36/lib/python3.6/site-packages/ipykernel/__main__.py:2: DataConversionWarning: Data with input dtype uint8, int64 were all converted to float64 by StandardScaler.
+  from ipykernel import kernelapp as app
+accuracy :  74.1 %
+1 :  0.7037037037037037
+2 :  0.5740740740740741
+3 :  0.6481481481481481
+4 :  0.6296296296296297
+5 :  0.7407407407407407
+6 :  0.6851851851851852
+7 :  0.7222222222222222
+8 :  0.7037037037037037
+9 :  0.7037037037037037
+10 :  0.6851851851851852
+11 :  0.6851851851851852
+12 :  0.6666666666666666
+13 :  0.7037037037037037
+14 :  0.7037037037037037
+15 :  0.7222222222222222
+16 :  0.7037037037037037
+17 :  0.7222222222222222
+18 :  0.7037037037037037
+19 :  0.7222222222222222
+20 :  0.7407407407407407
+21 :  0.7592592592592593
+22 :  0.7592592592592593
+23 :  0.7592592592592593
+24 :  0.7222222222222222
+25 :  0.7407407407407407
+26 :  0.7777777777777778
+27 :  0.7592592592592593
+28 :  0.7777777777777778
+29 :  0.7592592592592593
+30 :  0.7777777777777778
+31 :  0.7407407407407407
+32 :  0.7962962962962963
+33 :  0.7777777777777778
+34 :  0.7962962962962963
+35 :  0.7962962962962963
+36 :  0.7777777777777778
+37 :  0.7962962962962963
+38 :  0.7962962962962963
+39 :  0.7962962962962963
+40 :  0.7962962962962963
+41 :  0.7962962962962963
+42 :  0.7962962962962963
+43 :  0.7777777777777778
+44 :  0.7962962962962963
+45 :  0.7962962962962963
+46 :  0.7962962962962963
+47 :  0.7777777777777778
+48 :  0.7777777777777778
+49 :  0.7592592592592593
+50 :  0.7777777777777778
+51 :  0.7777777777777778
+52 :  0.7777777777777778
+53 :  0.7407407407407407
+54 :  0.7407407407407407
+55 :  0.7407407407407407
+56 :  0.7407407407407407
+57 :  0.7407407407407407
+58 :  0.7407407407407407
+59 :  0.7407407407407407
+60 :  0.7407407407407407
+61 :  0.7407407407407407
+62 :  0.7407407407407407
+63 :  0.7407407407407407
+64 :  0.7407407407407407
+65 :  0.7407407407407407
+66 :  0.7407407407407407
+67 :  0.7407407407407407
+68 :  0.7407407407407407
+69 :  0.7407407407407407
+70 :  0.7407407407407407
+71 :  0.7407407407407407
+72 :  0.7407407407407407
+73 :  0.7407407407407407
+74 :  0.7407407407407407
+75 :  0.7407407407407407
+76 :  0.7407407407407407
+77 :  0.7407407407407407
+78 :  0.7407407407407407
+79 :  0.7407407407407407
+80 :  0.7407407407407407
+81 :  0.7407407407407407
+82 :  0.7407407407407407
+83 :  0.7407407407407407
+84 :  0.7407407407407407
+85 :  0.7407407407407407
+86 :  0.7407407407407407
+87 :  0.7407407407407407
+88 :  0.7407407407407407
+89 :  0.7407407407407407
+90 :  0.7407407407407407
+91 :  0.7407407407407407
+92 :  0.7407407407407407
+93 :  0.7407407407407407
+94 :  0.7407407407407407
+95 :  0.7407407407407407
+96 :  0.7407407407407407
+97 :  0.7407407407407407
+98 :  0.7407407407407407
+99 :  0.7407407407407407
+32  :  79.63 %
+accuracy :  79.60000000000001 %
+              precision    recall  f1-score   support
+
+  COLLECTION       0.71      0.36      0.48        14
+     PAIDOFF       0.81      0.95      0.87        40
+
+   micro avg       0.80      0.80      0.80        54
+   macro avg       0.76      0.65      0.67        54
+weighted avg       0.78      0.80      0.77        54
+
+
+
+Jaccard Similarity Score :  79.63 %
+
+
+F1-SCORE :  [0.47619048 0.87356322]
+
+
+Train Accuracy:  74.85549132947978 %
+Best Score: 0.7687861271676301
+Best params: {'criterion': 'entropy', 'max_depth': 6, 'max_features': 4, 'random_state': 20}
+/opt/conda/envs/Python36/lib/python3.6/site-packages/sklearn/model_selection/_search.py:841: DeprecationWarning: The default of the `iid` parameter will change from True to False in version 0.22 and will be removed in 0.24. This will change numeric results when test-set sizes are unequal.
+  DeprecationWarning)
+              precision    recall  f1-score   support
+
+  COLLECTION       0.44      0.29      0.35        14
+     PAIDOFF       0.78      0.88      0.82        40
+
+   micro avg       0.72      0.72      0.72        54
+   macro avg       0.61      0.58      0.59        54
+weighted avg       0.69      0.72      0.70        54
+
+
+
+Jaccard Similarity Score :  72.22 %
+
+
+F1-SCORE :  [0.34782609 0.82352941]
+
+
+Train Accuracy:  79.47976878612717 %
+              precision    recall  f1-score   support
+
+  COLLECTION       0.00      0.00      0.00        14
+     PAIDOFF       0.74      0.97      0.84        40
+
+   micro avg       0.72      0.72      0.72        54
+   macro avg       0.37      0.49      0.42        54
+weighted avg       0.55      0.72      0.62        54
+
+
+
+Jaccard Similarity Score :  72.22 %
+
+
+F1-SCORE :  [0.         0.83870968]
+
+
+Train Accuracy:  76.01156069364163 %
+/opt/conda/envs/Python36/lib/python3.6/site-packages/sklearn/linear_model/logistic.py:433: FutureWarning: Default solver will be changed to 'lbfgs' in 0.22. Specify a solver to silence this warning.
+  FutureWarning)
+              precision    recall  f1-score   support
+
+  COLLECTION       1.00      0.07      0.13        14
+     PAIDOFF       0.75      1.00      0.86        40
+
+   micro avg       0.76      0.76      0.76        54
+   macro avg       0.88      0.54      0.50        54
+weighted avg       0.82      0.76      0.67        54
+
+
+
+Jaccard Similarity Score :  75.93 %
+
+
+F1-SCORE :  [0.13333333 0.86021505]
+
+
+Train Accuracy:  75.43352601156069 %
+Algorithm	Jaccatd	F1-Score	LogLoss
+0	KNN	79.63	[0.4761904761904762, 0.8735632183908046]	NaN
+1	Decision Tree	72.22	[0.34782608695652173, 0.823529411764706]	NaN
+2	SVM	72.22	[0.0, 0.8387096774193549]	NaN
+3	LogisticRegression	75.93	[0.13333333333333333, 0.8602150537634409]	NaN
+Report
+You should be able to report the accuracy of the built model using different evaluation metrics:
+
+Algorithm	Jaccard	F1-score	LogLoss
+KNN	?	?	NA
+Decision Tree	?	?	NA
+SVM	?	?	NA
+LogisticRegression	?	?	?
+Want to learn more?
+IBM SPSS Modeler is a comprehensive analytics platform that has many machine learning algorithms. It has been designed to bring predictive intelligence to decisions made by individuals, by groups, by systems – by your enterprise as a whole. A free trial is available through this course, available here: SPSS Modeler
+
+Also, you can use Watson Studio to run these notebooks faster with bigger datasets. Watson Studio is IBM's leading cloud solution for data scientists, built by data scientists. With Jupyter notebooks, RStudio, Apache Spark and popular libraries pre-packaged in the cloud, Watson Studio enables data scientists to collaborate on their projects without having to install anything. Join the fast-growing community of Watson Studio users today with a free account at Watson Studio
+
+Thanks for completing this lesson!
+Author: Saeed Aghabozorgi
+Saeed Aghabozorgi, PhD is a Data Scientist in IBM with a track record of developing enterprise level applications that substantially increases clients’ ability to turn data into actionable knowledge. He is a researcher in data mining field and expert in developing advanced analytic methods like machine learning and statistical modelling on large datasets.
+
